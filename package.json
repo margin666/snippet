@@ -12,12 +12,206 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsWelcome": [
+      {
+        "view": "treeView",
+        "when": "snippet.setSaveDirectory",
+        "contents": "还未设置保存路径\n[设置](command:snippet.createSaveDirectory)"  
+      },
+      {
+        "view": "treeView",
+        "when": "snippet.isEmpty",
+        "contents": "无可用的仓库\n[新建仓库](command:snippet.createStore)"  
+      }
+    ],
     "commands": [
       {
-        "command": "snippet.helloWorld",
-        "title": "Hello World"
+        "command": "snippet.importStore",
+        "title": "导入",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "snippet.exportStore",
+        "title": "导出",
+        "icon": "$(export)"
+      },
+      {
+        "command": "snippet.removeStore",
+        "title": "删除仓库",
+        "icon": "$(trashcan)"
+      },
+      {
+        "command": "snippet.createStore",
+        "title": "新建仓库",
+        "icon": "$(repo-create)"
+      },
+
+      {
+        "command": "snippet.createSaveDirectory",
+        "title": "createSaveDirectory"
+      },
+      {
+        "command": "snippet.saveAsJavaScript",
+        "title": "JavaScript"
+      },
+      {
+        "command": "snippet.saveAsHTML",
+        "title": "HTML"
+      },
+      {
+        "command": "snippet.saveAsJSON",
+        "title": "JSON"
+      },
+      {
+        "command": "snippet.saveAsText",
+        "title": "Text"
+      },
+      {
+        "command": "snippet.saveAsCSS",
+        "title": "CSS"
+      },
+
+      {
+        "command": "snippet.refresh",
+        "title": "刷新",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "snippet.createFolder",
+        "title": "新建文件夹",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "snippet.removeItem",
+        "title": "移除标签",
+        "icon": "$(trashcan)"
+      },
+      {
+        "command": "snippet.removeFolder",
+        "title": "删除文件夹",
+        "icon": "$(trashcan)"
+      },
+      {
+        "command": "snippet.insert",
+        "title": "插入",
+        "icon": "$(zap)"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "activitybar": [
+       {
+        "id": "snippet",
+        "title": "snippet",
+        "icon": "$(repo)"
+       } 
+      ]
+    },
+    "views": {
+      "snippet": [
+        {
+          "id": "treeView",
+          "name": ""
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "snippet",
+        "label": "收藏为..."
+      }
+    ],
+    "menus": {
+      "snippet": [
+        {
+          "command": "snippet.saveAsHTML",
+          "group": "navigation@2"
+        },
+        {
+          "command": "snippet.saveAsJavaScript",
+          "group": "navigation@1"
+        },
+        {
+          "command": "snippet.saveAsJSON",
+          "group": "navigation@3"
+        },
+        {
+          "command": "snippet.saveAsText",
+          "group": "navigation@5"
+        },
+        {
+          "command": "snippet.saveAsCSS",
+          "group": "navigation@4"
+        }
+      ],
+      "editor/context": [
+        {
+          
+          "submenu": "snippet",
+          "when": "editorHasSelection && !snippet.setSaveDirectory",
+          "group": "9_cutcopypaste@4"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "snippet.importStore",
+          "group": "navigation@3",
+          "when": "view == treeView"
+        },
+        {
+          "command": "snippet.createStore",
+          "group": "navigation@1",
+          "when": "view == treeView"
+        },
+        {
+          "command": "snippet.refresh",
+          "group": "navigation@2",
+          "when": "view == treeView"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "snippet.createFolder",
+          "group": "navigation@1",
+          "when": "view == treeView && viewItem !== item"
+        },
+        {
+          "command": "snippet.removeStore",
+          "group": "navigation@2",
+          "when": "view == treeView && viewItem === store"
+        },
+        {
+          "command": "snippet.exportStore",
+          "group": "navigation@3",
+          "when": "view == treeView && viewItem === store"
+        },
+        {
+          "command": "snippet.removeItem",
+          "group": "inline@2",
+          "when": "view == treeView && viewItem == item"
+        },
+        {
+          "command": "snippet.insert",
+          "group": "inline@1",
+          "when": "view == treeView && viewItem == item"
+        },
+        {
+          "command": "snippet.removeFolder",
+          "group": "navigation@2",
+          "when": "view == treeView && viewItem == folder"
+        }
+        
+      ]
+    },
+    "configuration": {
+      "title": "snippet",
+      "properties": {
+       "snippet.config": {
+        "type": "object",
+        "default": {},
+        "description": "代码片段存储的json文件的路径"
+       } 
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",

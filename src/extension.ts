@@ -122,7 +122,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 		const storeList = stores.map(v => `${v.name}(${v.id})`);
 		const selectStore = await vscode.window.showQuickPick(storeList, {
-			title: `请选择保存位置`,
+			title: `请选择仓库`,
 			canPickMany: false,
 			ignoreFocusOut: false,
 			placeHolder: '搜索...'
@@ -137,9 +137,9 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 		const folders = store.folders.filter(v => v.parentId === storeId).map(v => `${v.label}(${v.id})`);
 		async function fn(currentFolderId: string, list: string[], cb:(currentFolderId: string, folder:string) => {status: boolean; list: string[]; currentFolder: string;}):Promise<any>{
-			const temp = [`当前目录(${currentFolderId})`, ...list];
+			const temp = [`当前文件夹(${currentFolderId})`, ...list];
 			const folder = await vscode.window.showQuickPick(temp, {
-				title: `请选择保存路径`,
+				title: `请选择文件夹`,
 				canPickMany: false,
 				ignoreFocusOut: false,
 				placeHolder: '搜索...'

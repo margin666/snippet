@@ -56,6 +56,11 @@
         "title": "createSaveDirectory"
       },
       {
+        "command": "snippet.changeSaveDirectory",
+        "title": "设置仓库保存位置",
+        "icon": "$(save-as)"
+      },
+      {
         "command": "snippet.saveAsJavaScript",
         "title": "JavaScript"
       },
@@ -168,7 +173,7 @@
           "when": "view == treeView"
         },
         {
-          "command": "snippet.refresh",
+          "command": "snippet.changeSaveDirectory",
           "group": "navigation@2",
           "when": "view == treeView"
         }

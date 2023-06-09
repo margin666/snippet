@@ -30,7 +30,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		res.status && treeView?.refrech();
 	});
 	vscode.commands.registerCommand('snippet.exportStore', async data => {
-		// console.log(data)
 		const msg = await vscode.window.showOpenDialog({
 			canSelectFiles: false,
 			canSelectFolders: true,
@@ -65,7 +64,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		});
 	vscode.commands.registerCommand('snippet.createStore', async () => {
 		const name = await vscode.window.showInputBox({
-			placeHolder: '请输入字段名称',
+			placeHolder: '请输入仓库名称',
 			ignoreFocusOut: true
 		});
 		if(!name){
@@ -79,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	vscode.commands.registerCommand('snippet.createFolder', async (data:TreeItemNode) => {
 		const name = await vscode.window.showInputBox({
-			placeHolder: '请输入收藏夹名称',
+			placeHolder: '请输入文件夹名称',
 			ignoreFocusOut: true
 		});
 		if(!name){
@@ -184,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		const name = await vscode.window.showInputBox({
-			placeHolder: '请输入字段名称',
+			placeHolder: '起个名字吧',
 			ignoreFocusOut: true
 		});
 		if(!name){
@@ -227,6 +226,27 @@ export async function activate(context: vscode.ExtensionContext) {
 		treeView?.refrech();
 	});
 	
+	vscode.commands.registerCommand('snippet.changeSaveDirectory', async () => {
+		const msg = await vscode.window.showOpenDialog({
+			title: '更改保存位置',
+			canSelectFiles: false,
+			canSelectFolders: true,
+			canSelectMany: false,
+			defaultUri: vscode.Uri.file("/D:/"),
+			openLabel: '确认'
+		});
+		if(!msg){
+			return;
+		}
+		const res = await storeInstance.changeSaveDirectory(msg[0]);
+		if(res.status){
+			vscode.window.showInformationMessage(res.msg);
+		}
+	});
 }
 
-export function deactivate() {}
+export function deactivate() {
+	const storeInstance = LocalConfig.getInstance();
+	storeInstance.removeConfig();
+	vscode.window.showInformationMessage(`配置项已删除,存储数据的json文件请自行删除!`);
+}

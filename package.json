@@ -2,9 +2,13 @@
   "name": "snippet",
   "displayName": "snippet",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "engines": {
     "vscode": "^1.78.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/margin666/vscode-extension-snippet.git"
   },
   "categories": [
     "Other"

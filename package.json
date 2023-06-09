@@ -1,8 +1,9 @@
 {
-  "name": "snippet",
-  "displayName": "snippet",
+  "name": "snippet-store",
+  "displayName": "snippet-store",
   "description": "",
-  "version": "0.0.3",
+  "version": "0.0.4",
+  "publisher": "margin",
   "engines": {
     "vscode": "^1.78.0"
   },

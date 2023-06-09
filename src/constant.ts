@@ -10,6 +10,7 @@ export const SUCCESSFULLY_REMOVED_ITEM = '成功移除item';
 export const SUCCESSFULLY_IMPORT = '成功导入!';
 export const SUCCESSFULLY_EXPORT = '成功导出!';
 export const SUCCESSFULLY_INSERT = '成功插入!';
+export const SUCCESSFULLY_CHANGED_SAVE_DIRECTORY = '成功修改保存位置!';
 
 
 export const NOT_FOUND_STORE = '未找到store';

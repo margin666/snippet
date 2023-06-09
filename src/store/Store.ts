@@ -135,7 +135,7 @@ export class LocalConfig{
       return {
         source: vscode.Uri.joinPath(this.config!.savePathUri, `${v}.json`),
         target: vscode.Uri.joinPath(path,  `${v}.json`)
-      }
+      };
     });
     for(const item of filePathList){
       await vscode.workspace.fs.copy(item.source, item.target, { overwrite: true });

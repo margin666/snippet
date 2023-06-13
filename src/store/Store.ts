@@ -87,7 +87,7 @@ export class LocalConfig{
   }
 
   async load():Promise<Msg>{
-    const msg = this.validate();
+    const msg = await this.validate2();
     if(!msg.status){
       return msg;
     }

@@ -28,11 +28,11 @@ export class DepNodeProvide implements vscode.TreeDataProvider<vscode.TreeItem>{
         const treeItemNodes: TreeItemNode[] = [];
         const folders = store.folders.filter(v => v.parentId === id);
         folders.forEach(v => {
-          treeItemNodes.push(new TreeItemNode(`🐹${v.label}`, v.id, v.parentId, storeId, 'folder', null, null, 1));
+          treeItemNodes.push(new TreeItemNode(`📁${v.label}`, v.id, v.parentId, storeId, 'folder', null, null, 1));
         });
         const items = store.state.filter(v => v.folderId === id);
         items.forEach(v => {
-          treeItemNodes.push(new TreeItemNode(`🌰${v.title}`, v.id, v.folderId, storeId, 'item', v.snippet, v.language, 0));
+          treeItemNodes.push(new TreeItemNode(`📝${v.title}`, v.id, v.folderId, storeId, 'item', v.snippet, v.language, 0));
         });
         return treeItemNodes;
       } else if (type === 'store') {
@@ -43,11 +43,11 @@ export class DepNodeProvide implements vscode.TreeDataProvider<vscode.TreeItem>{
         const treeItemNodes: TreeItemNode[] = [];
         const folders = store.folders.filter(v => v.parentId === id);
         folders.forEach(v => {
-          treeItemNodes.push(new TreeItemNode(`🐹${v.label}`, v.id, v.parentId, storeId, 'folder', null, null, 1));
+          treeItemNodes.push(new TreeItemNode(`📁${v.label}`, v.id, v.parentId, storeId, 'folder', null, null, 1));
         });
         const items = store.state.filter(v => v.folderId === id);
         items.forEach(v => {
-          treeItemNodes.push(new TreeItemNode(`🌰${v.title}`, v.id, v.folderId, storeId, 'item', v.snippet, v.language, 0));
+          treeItemNodes.push(new TreeItemNode(`📝${v.title}`, v.id, v.folderId, storeId, 'item', v.snippet, v.language, 0));
         });
         return treeItemNodes;
 
@@ -56,7 +56,7 @@ export class DepNodeProvide implements vscode.TreeDataProvider<vscode.TreeItem>{
       }
     } else {
       const list = this.stores.map(v => {
-        return new TreeItemNode(`🌳${v.name}`, v.id, '-1', v.id, 'store', null, null, 2);
+        return new TreeItemNode(`🍒${v.name}`, v.id, '-1', v.id, 'store', null, null, 2);
       });
       return list;
     }

@@ -111,6 +111,9 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('snippet.saveAsCSS', () => {
 		vscode.commands.executeCommand('snippet.addSnippet', 'css');
 	});
+	vscode.commands.registerCommand('snippet.saveAsSQL', () => {
+		vscode.commands.executeCommand('snippet.addSnippet', 'sql');
+	});
 
 
 
@@ -243,6 +246,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage(res.msg);
 		}
 	});
+
 }
 
 export function deactivate() {

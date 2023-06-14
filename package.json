@@ -2,7 +2,7 @@
   "name": "snippet-store",
   "displayName": "snippet-store",
   "description": "",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "publisher": "margin",
   "engines": {
     "vscode": "^1.78.0"
@@ -53,7 +53,7 @@
 
       {
         "command": "snippet.createSaveDirectory",
-        "title": "createSaveDirectory"
+        "title": "创建保存路径"
       },
       {
         "command": "snippet.changeSaveDirectory",
@@ -80,7 +80,10 @@
         "command": "snippet.saveAsCSS",
         "title": "CSS"
       },
-
+      {
+        "command": "snippet.saveAsSQL",
+        "title": "SQL"
+      },
       {
         "command": "snippet.refresh",
         "title": "刷新",
@@ -127,7 +130,7 @@
     "submenus": [
       {
         "id": "snippet",
-        "label": "收藏为..."
+        "label": "添加为..."
       }
     ],
     "menus": {
@@ -151,14 +154,17 @@
         {
           "command": "snippet.saveAsCSS",
           "group": "navigation@4"
+        },
+        {
+          "command": "snippet.saveAsSQL",
+          "group": "navigation@5"
         }
       ],
       "editor/context": [
         {
-          
           "submenu": "snippet",
           "when": "editorHasSelection && !snippet.setSaveDirectory",
-          "group": "9_cutcopypaste@4"
+          "group": "9_cutcopypaste"
         }
       ],
       "view/title": [

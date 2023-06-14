@@ -48,7 +48,7 @@ export class LocalConfig{
     return this.stores;
   }
   
-  validate():Msg{
+  validate2():Msg{
     if (!this.config) {
       vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
       return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
@@ -65,12 +65,10 @@ export class LocalConfig{
     return utils.generateMsg(true, constant.VERIFICATION_PASSED);
   }
 
-  /**
-   * 暂时还不想用这个来判断，咋说呢
-   */
-  async validate2():Promise<Msg>{
-    const config = await vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
-    if (!config) {
+  
+  async validate():Promise<Msg>{
+    const config = await vscode.workspace.getConfiguration().get('snippet.config') as Record<string, string>;
+    if (Object.keys(config).length === 0) {
       vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
       return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
@@ -87,7 +85,7 @@ export class LocalConfig{
   }
 
   async load():Promise<Msg>{
-    const msg = await this.validate2();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -127,7 +125,7 @@ export class LocalConfig{
   }
 
   async changeSaveDirectory (path: vscode.Uri): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -166,7 +164,7 @@ export class LocalConfig{
   }
 
   private async updateConfig (): Promise<Msg>{
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -183,7 +181,7 @@ export class LocalConfig{
   }
 
   async removeItem (storeId: string, itemId: string, needSave?: boolean): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -201,7 +199,7 @@ export class LocalConfig{
   }
 
   async addItem (storeId: string, title: string, folderId: string, language: Language): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -233,7 +231,7 @@ export class LocalConfig{
  
 
   async insertSnippet (storeId: string, id: string): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -253,7 +251,7 @@ export class LocalConfig{
 
 
   async importStore (path: vscode.Uri): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -312,7 +310,7 @@ export class LocalConfig{
   }
 
   async exportStore (path: vscode.Uri, id: string): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -331,7 +329,7 @@ export class LocalConfig{
   }
 
   async removeStore(id: string): Promise<Msg>{
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -347,7 +345,7 @@ export class LocalConfig{
   }
 
   async createStore (name: string): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -366,7 +364,7 @@ export class LocalConfig{
 
 
   async addFolder (storeId: string, label: string, parentId: string, canRemove: boolean = true, virtually: boolean = false): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
@@ -382,7 +380,7 @@ export class LocalConfig{
   }
 
   async removeFolder (storeId: string, id: string): Promise<Msg> {
-    const msg = this.validate();
+    const msg = await this.validate();
     if(!msg.status){
       return msg;
     }

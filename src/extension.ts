@@ -249,8 +249,4 @@ export async function activate(context: vscode.ExtensionContext) {
 
 }
 
-export function deactivate() {
-	const storeInstance = LocalConfig.getInstance();
-	storeInstance.removeConfig();
-	vscode.window.showInformationMessage(`配置项已删除,存储数据的json文件请自行删除!`);
-}
+export function deactivate() {}

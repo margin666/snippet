@@ -17,8 +17,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	vscode.commands.registerCommand('snippet.importStore', async () => {
 		const msg = await vscode.window.showOpenDialog({
-			canSelectFiles: true,
-			canSelectFolders: false,
+			canSelectFiles: false,
+			canSelectFolders: true,
 			canSelectMany: true,
 			defaultUri: vscode.Uri.file("/D:/"),
 			openLabel: '确认'
@@ -28,6 +28,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 		const res = await storeInstance.importStore(msg[0]);
 		res.status && treeView?.refrech();
+		!res.status && vscode.window.showWarningMessage(res.msg);
+		
 	});
 	vscode.commands.registerCommand('snippet.exportStore', async data => {
 		const msg = await vscode.window.showOpenDialog({
@@ -122,69 +124,84 @@ export async function activate(context: vscode.ExtensionContext) {
 		if(!stores){
 			return;
 		}
-		const storeList = stores.map(v => `${v.name}(${v.id})`);
+		const storeList = stores.map(v => {
+			return {
+				label: v.name,
+				description: v.id
+			};
+		});
 		const selectStore = await vscode.window.showQuickPick(storeList, {
 			title: `请选择仓库`,
 			canPickMany: false,
 			ignoreFocusOut: false,
-			placeHolder: '搜索...'
+			placeHolder: '搜索仓库...'
 		});
 		if(!selectStore){
 			return ;
 		}
-		const storeId = selectStore.match(/(?<=.*\()[^\(]*(?=\)$)/)![0];
+		const storeId = selectStore.description;
 		const store = stores.find(v => v.id === storeId);
 		if(!store){
 			return;
 		}
-		const folders = store.folders.filter(v => v.parentId === storeId).map(v => `${v.label}(${v.id})`);
-		async function fn(currentFolderId: string, list: string[], cb:(currentFolderId: string, folder:string) => {status: boolean; list: string[]; currentFolder: string;}):Promise<any>{
-			const temp = [`当前文件夹(${currentFolderId})`, ...list];
-			const folder = await vscode.window.showQuickPick(temp, {
+		const folders = store.folders.filter(v => v.parentId === storeId).map(v => {
+			return {
+				label: v.label,
+				description: v.id
+			};
+		});
+		async function fn(currentFolderId: string, list:vscode.QuickPickItem[], cb:(currentFolderId: string, folder: vscode.QuickPickItem) => {status: boolean; list: vscode.QuickPickItem[]; currentFolder: string;}):Promise<any>{
+			const temp = [{
+				label: '当前文件夹',
+				description: currentFolderId
+			}, ...list];
+			const selectFolder = await vscode.window.showQuickPick(temp, {
 				title: `请选择文件夹`,
 				canPickMany: false,
 				ignoreFocusOut: false,
-				placeHolder: '搜索...'
+				placeHolder: '搜索文件夹...'
 			});
-			if(!folder){
+			if(!selectFolder){
 				return false;
 			}
-			const res = cb(currentFolderId,folder);
+			const res = cb(currentFolderId, selectFolder);
 			if(res.status){
 				return fn(res.currentFolder, res.list, cb);
 			}else{
-				return folder;
+				return selectFolder;
 			}
 		}
-		const result = await fn(storeId, folders, (currentFolderId, selectLabel) => {
-			const arr = selectLabel.match(/(?<=.*\()[^\(]*(?=\)$)/);
-			if(!arr){
+		const result = await fn(storeId, folders, (currentFolderId, selectFolder) => {
+			if(!selectFolder){
 				return {
 					status: false,
 					list: [],
-					currentFolder: selectLabel
+					currentFolder: currentFolderId
 				};
 			}
-			const id = arr[0];
-			if(currentFolderId === id){
+			if(currentFolderId === selectFolder.description){
 				return {
 					status: false,
 					list: [],
-					currentFolder: id
+					currentFolder: selectFolder.description
 				};
 			}
-			const list = store.folders.filter(v => v.parentId === id);
-			const listLabel = list.map(v => `${v.label}(${v.id})`);
+			const list = store.folders.filter(v => v.parentId === selectFolder.description);
+			const listLabel:vscode.QuickPickItem[] = list.map(v => {
+				return {
+					label: v.label,
+					description: v.id
+				};
+			});
 			return {
 				status: list.length > 0,
 				list: listLabel,
-				currentFolder: id
+				currentFolder: selectFolder.description!
 			};
 		});
 		if(!result){
 			return;
 		}
-
 		const name = await vscode.window.showInputBox({
 			placeHolder: '起个名字吧',
 			ignoreFocusOut: true
@@ -192,7 +209,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		if(!name){
 			return;
 		}
-		const folderId = result.match(/(?<=.*\()[^\(]*(?=\)$)/)![0];
+		const folderId = result.description;
 		const res = await storeInstance.addItem(storeId, name, folderId, language);
 		res.status && treeView?.refrech();
 	});
@@ -246,6 +263,158 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage(res.msg);
 		}
 	});
+
+	vscode.commands.registerCommand('snippet.saveTemplate', async (data:vscode.Uri) => {
+		
+		const stat = await vscode.workspace.fs.stat(data);
+		const type = stat.type === 1 ? 'file' : stat.type === 2 ? 'folder' : stat.type;
+		if(typeof type === 'number'){
+			vscode.window.showErrorMessage('选中项非文件/文件夹。');
+			return;
+		}
+		const stores = storeInstance._stores;
+		if(!stores){
+			return;
+		}
+		const storeList = stores.map(v => {
+			return {
+				label: v.name,
+				description: v.id
+			};
+		});
+		const selectStore = await vscode.window.showQuickPick(storeList, {
+			title: `请选择仓库`,
+			canPickMany: false,
+			ignoreFocusOut: false,
+			placeHolder: '搜索仓库...'
+		});
+		if(!selectStore){
+			return ;
+		}
+		const storeId = selectStore.description;
+		const store = stores.find(v => v.id === storeId);
+		if(!store){
+			return;
+		}
+		const folders = store.folders.filter(v => v.parentId === storeId).map(v => {
+			return {
+				label: v.label,
+				description: v.id
+			};
+		});
+		async function fn(currentFolderId: string, list:vscode.QuickPickItem[], cb:(currentFolderId: string, folder:vscode.QuickPickItem) => {status: boolean; list:vscode.QuickPickItem[]; currentFolder: string;}):Promise<any>{
+			const temp = [{
+				label: '当前文件夹',
+				description: currentFolderId
+			}, ...list];
+			const selectFolder = await vscode.window.showQuickPick(temp, {
+				title: `请选择文件夹`,
+				canPickMany: false,
+				ignoreFocusOut: false,
+				placeHolder: '搜索文件夹...'
+			});
+			if(!selectFolder){
+				return false;
+			}
+			const res = cb(currentFolderId,selectFolder);
+			if(res.status){
+				return fn(res.currentFolder, res.list, cb);
+			}else{
+				return selectFolder;
+			}
+		}
+		const result = await fn(storeId, folders, (currentFolderId, selectFolder) => {
+			if(!selectFolder){
+				return {
+					status: false,
+					list: [],
+					currentFolder: currentFolderId
+				};
+			}
+			if(currentFolderId === selectFolder.description){
+				return {
+					status: false,
+					list: [],
+					currentFolder: selectFolder.description
+				};
+			}
+			const list = store.folders.filter(v => v.parentId === selectFolder.description);
+			const listLabel:vscode.QuickPickItem[] = list.map(v => {
+				return {
+					label: v.label,
+					description: v.id
+				};
+			});
+			return {
+				status: list.length > 0,
+				list: listLabel,
+				currentFolder: selectFolder.description!
+			};
+		});
+		if(!result){
+			return;
+		}
+
+		const name = await vscode.window.showInputBox({
+			placeHolder: '起个名字吧',
+			ignoreFocusOut: true
+		});
+		if(!name){
+			return;
+		}
+		const folderId = result.description;
+		const res = await storeInstance.saveTemplate(storeId, data, name, folderId, type, 'desc');
+		res.status && treeView?.refrech();
+
+	});
+	vscode.commands.registerCommand('snippet.removeTemplate', async (data: TreeItemNode) => {
+		const res = await storeInstance.removeTemplate(data.storeId, data.id, true);
+		res.status && treeView?.refrech();
+	});
+
+	vscode.commands.registerCommand('snippet.generateTemplate', async (data: vscode.Uri) => {
+		const stores = storeInstance._stores;
+		if(!stores){
+			return;
+		}
+		const storeList:vscode.QuickPickItem[] = stores.map(v => {
+			return {
+				label: v.name,
+				description: v.id
+			};
+		});
+		const selectStore = await vscode.window.showQuickPick(storeList, {
+			title: `请选择仓库`,
+			canPickMany: false,
+			ignoreFocusOut: false,
+			placeHolder: '搜索仓库...'
+		});
+		if(!selectStore){
+			return ;
+		}
+		const store = stores.find(v => v.id === selectStore.description);
+		if(!store){
+			return;
+		}
+		const templates:vscode.QuickPickItem[] = store.templates.map(v => {
+			return {
+				label: v.name,
+				description: v.id
+			};
+		});
+		const template = await vscode.window.showQuickPick(templates, {
+			title: `请选择模板`,
+			canPickMany: false,
+			ignoreFocusOut: false,
+			placeHolder: '搜索模板...'
+		});
+		if(!template){
+			return false;
+		}
+		await storeInstance.insertTemplate(selectStore.description!, template.description!, data);
+	});
+
+	
 
 }
 

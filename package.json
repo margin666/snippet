@@ -2,7 +2,7 @@
   "name": "snippet-store",
   "displayName": "snippet-store",
   "description": "存放常用的代码片段",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "publisher": "margin",
   "engines": {
     "vscode": "^1.78.0"
@@ -14,7 +14,9 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onFileSystem:file"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "viewsWelcome": [
@@ -108,6 +110,19 @@
         "command": "snippet.insert",
         "title": "插入",
         "icon": "$(zap)"
+      },
+      {
+        "command": "snippet.saveTemplate",
+        "title": "保存为模板"
+      },
+      {
+        "command": "snippet.generateTemplate",
+        "title": "注入模板"
+      },
+      {
+        "command": "snippet.removeTemplate",
+        "title": "移除模板",
+        "icon": "$(trashcan)"
       }
     ],
     "viewsContainers": {
@@ -206,6 +221,11 @@
           "when": "view == treeView && viewItem == item"
         },
         {
+          "command": "snippet.removeTemplate",
+          "group": "inline@2",
+          "when": "view == treeView && viewItem == template"
+        },
+        {
           "command": "snippet.insert",
           "group": "inline@1",
           "when": "view == treeView && viewItem == item"
@@ -216,6 +236,18 @@
           "when": "view == treeView && viewItem == folder"
         }
         
+      ],
+      "explorer/context": [
+        {
+          "command": "snippet.saveTemplate",
+          "group": "9_cutcopypaste",
+          "when": "snippet.load"
+        },
+        {
+          "command": "snippet.generateTemplate",
+          "group": "9_cutcopypaste",
+          "when": "snippet.load && explorerResourceIsFolder"
+        }
       ]
     },
     "configuration": {
@@ -225,7 +257,7 @@
         "type": "object",
         "default": {},
         "description": "代码片段存储的json文件的路径"
-       } 
+       }
       }
     }
   },

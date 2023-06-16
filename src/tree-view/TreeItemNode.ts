@@ -2,11 +2,7 @@ import * as vscode from 'vscode';
 import type { TreeNodeItemType, Language } from '../index';
 
 
-const typeMapIcon:Record<TreeNodeItemType, string> = {
-	folder: '📁',
-	item: '🏷️',
-	store: '📦'
-};
+
 
 export class TreeItemNode extends vscode.TreeItem {
 	public readonly iconPath: vscode.ThemeIcon | undefined;

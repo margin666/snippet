@@ -16,6 +16,7 @@ export const SUCCESSFULLY_CHANGED_SAVE_DIRECTORY = '成功修改保存位置!';
 export const NOT_FOUND_STORE = '未找到store';
 export const NOT_FOUND_ITEM = '未找到item';
 export const NOT_FOUND_FOLDER = '未找到folder';
+export const NOT_FOUND_TEMPLATE = '未找到模板';
 
 export const NOT_FOUND_CONFIG = '未找到【snippet.config】配置';
 export const NOT_FOUND_CONFIG_STORE_MAP = '未找到【snippet.config.storeMap】配置项';
@@ -25,4 +26,10 @@ export const NOT_FOUND_CONFIG_SAVE_PATH = '未找到【snippet.config.savePath�
 
 export const VERIFICATION_PASSED = '验证通过';
 export const VERIFICATION_UPDATED_CONFIG = '配置更新成功';
+
+
+export const SUCCESSFULLY_COPY = '成功复制!';
+
+export const SUCCESSFULLY_ADD_TEMPLATE = '成功添加模板';
+export const SUCCESSFULLY_REMOVED_TEMPLATE = '成功移除模板';
 

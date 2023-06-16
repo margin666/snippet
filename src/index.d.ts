@@ -3,7 +3,7 @@
 /**
  * 树视图Type
  */
-export type TreeNodeItemType = 'folder' | 'item' | 'store';
+export type TreeNodeItemType = 'folder' | 'item' | 'store' | 'template';
 
 /**
  * 保存的文本语言类型
@@ -19,6 +19,15 @@ interface Folder{
   label: string;
   canRemove: boolean;
   virtually: boolean;
+}
+
+interface Template{
+  id: string;
+  name: string;
+  description?: string;
+  parentId: string;
+  storeId: string;
+  type: 'file' | 'folder';
 }
 
 /**
@@ -40,6 +49,7 @@ export interface Store{
   id: string;
   state: StateItem[];
   folders: Folder[];
+  templates: Template[];
 }
 
 /**

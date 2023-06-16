@@ -1,5 +1,5 @@
 
-import type { Config, Msg, Store, StateItem, Folder, Language } from '../index';
+import type { Config, Msg, Store, StateItem, Folder, Language, Template } from '../index';
 import * as vscode from 'vscode';
 import * as utils from '../utils';
 import * as constant from '../constant';
@@ -91,13 +91,14 @@ export class LocalConfig{
     }
     const config = await vscode.workspace.getConfiguration().get('snippet.config') as Config;
     vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', false);
+    vscode.commands.executeCommand('setContext', 'snippet.load', true);
     this.config = {
       stores: config.stores,
       savePathUri: vscode.Uri.file(config.savePath)
     };
     const savePath = vscode.Uri.file(config.savePath);
     for(const v of config.stores){
-      const filePath = vscode.Uri.joinPath(savePath, `${v}.json`);
+      const filePath = vscode.Uri.joinPath(savePath, v, `${v}.json`);
       const document = await vscode.workspace.openTextDocument(filePath);
       const store = await JSON.parse(document.getText()) as Store | undefined;
       if (store) {
@@ -129,15 +130,7 @@ export class LocalConfig{
     if(!msg.status){
       return msg;
     }
-    const filePathList = this.config!.stores.map(v => {
-      return {
-        source: vscode.Uri.joinPath(this.config!.savePathUri, `${v}.json`),
-        target: vscode.Uri.joinPath(path,  `${v}.json`)
-      };
-    });
-    for(const item of filePathList){
-      await vscode.workspace.fs.copy(item.source, item.target, { overwrite: true });
-    }
+    await utils.copyToTarget(this.config!.savePathUri, path);
     this.config!.savePathUri = path;
     const config:Config = {
       savePath: this.config!.savePathUri.fsPath,
@@ -155,11 +148,10 @@ export class LocalConfig{
       if(store){
         const temp = JSON.stringify(store);
         const storeBuffer = Buffer.from(temp);
-        const pathUri = vscode.Uri.joinPath(this.config!.savePathUri, `${v}.json`);
+        const pathUri = vscode.Uri.joinPath(this.config!.savePathUri, v, `${v}.json`);
         await vscode.workspace.fs.writeFile(pathUri, storeBuffer);
       }
     }
-    vscode.window.setStatusBarMessage(`已保存至${this.config!.savePathUri.fsPath}`, 1000);
     return true;
   }
 
@@ -250,62 +242,31 @@ export class LocalConfig{
 
 
 
-  async importStore (path: vscode.Uri): Promise<Msg> {
+  async importStore (source: vscode.Uri): Promise<Msg> {
     const msg = await this.validate();
     if(!msg.status){
       return msg;
     }
-    const filePath = vscode.Uri.joinPath(path);
+    const stat = await vscode.workspace.fs.stat(source);
+    if(stat.type !== 2){
+      return utils.generateMsg(false, '不是文件夹');
+    }
+
+    const sourceParent = vscode.Uri.joinPath(source, '../');
+    const [[name]] = await vscode.workspace.fs.readDirectory(sourceParent);
+    if(this.config!.stores.includes(name)){
+      return utils.generateMsg(false, '存在同名仓库！');
+    }
+    const target = vscode.Uri.joinPath(this.config!.savePathUri, name);
+    await utils.copyToTarget(source, target);
+
+    const filePath = vscode.Uri.joinPath(target, `${name}.json`);
     const document = await vscode.workspace.openTextDocument(filePath);
     const store = await JSON.parse(document.getText()) as Store;
-    
-    // 文件名（storeId）替换
-    // 获取所有的id
-    // 生成一份新的id
-    // 替换所有的id
-    const newStoreId = utils.getId();
-    const idMap:Map<string, string> = new Map();
-    idMap.set(store.id, newStoreId);
-    const folders:Folder[] = store.folders.map(v => {
-      const { id, parentId } = v;
-      if(!idMap.has(parentId)){
-        idMap.set(parentId, utils.getId());
-      }
-      if(!idMap.has(id)){
-        idMap.set(id, utils.getId());
-      }
-      return {
-        ...v,
-        id: idMap.get(id)!,
-        parentId: idMap.get(parentId)!
-      };
-    });
-    const state:StateItem[] = store.state.map(v => {
-      const { id, folderId } = v;
-      if(!idMap.has(folderId)){
-        idMap.set(folderId, utils.getId());
-      }
-      if(!idMap.has(id)){
-        idMap.set(id, utils.getId());
-      }
-      return {
-        ...v,
-        id: idMap.get(id)!,
-        folderId: idMap.get(folderId)!
-      };
-    });
-
-    const newStore:Store = {
-      name: store.name,
-      id: newStoreId,
-      state,
-      folders
-    };
-
-    this.stores.push(newStore);
-    this.config!.stores.push(newStoreId);
+    this.stores.push(store);
+    this.config!.stores.push(store.id);
     await this.updateConfig();
-    await this.saveFile([newStoreId]);
+    await this.saveFile([store.id]);
     return utils.generateMsg(true, constant.SUCCESSFULLY_IMPORT);
   }
 
@@ -315,16 +276,14 @@ export class LocalConfig{
       return msg;
     }
     
-    const newDirectory = vscode.Uri.joinPath(path, 'store');
+    const newDirectory = vscode.Uri.joinPath(path, `export-${Date.now()}`, id);
     await vscode.workspace.fs.createDirectory(newDirectory);
     const store = this.stores.find(v => v.id === id);
     if(!store){
       return utils.generateMsg(false, constant.NOT_FOUND_STORE);
     }
-    const _path = vscode.Uri.joinPath(this.config!.savePathUri, `${id}.json`);
-    const buffer = await vscode.workspace.fs.readFile(_path);
-    const newPath = vscode.Uri.joinPath(newDirectory, `${store.id}.json`);
-    await vscode.workspace.fs.writeFile(newPath, buffer);
+    const _path = vscode.Uri.joinPath(this.config!.savePathUri, id);
+    await utils.copyToTarget(_path, newDirectory);
     return utils.generateMsg(true, constant.SUCCESSFULLY_EXPORT);
   }
 
@@ -337,9 +296,9 @@ export class LocalConfig{
     if(idx > -1){
       this.stores.splice(idx, 1);
       this.config!.stores = this.config!.stores.filter(v => v !== id);
-      const storePath = vscode.Uri.joinPath(this.config!.savePathUri, `${id}.json`);
+      const storePath = vscode.Uri.joinPath(this.config!.savePathUri, id);
       await this.updateConfig();
-      await vscode.workspace.fs.delete(storePath);
+      await vscode.workspace.fs.delete(storePath, { recursive: true, useTrash: true });
     }
     return utils.generateMsg(true, constant.SUCCESSFULLY_REMOVED_STORE);
   }
@@ -355,7 +314,8 @@ export class LocalConfig{
       id,
       name,
       state: [],
-      folders: []
+      folders: [],
+      templates: []
     });
     await this.updateConfig();
     await this.saveFile([id]);
@@ -407,13 +367,79 @@ export class LocalConfig{
     getChilds(store.folders, id);
     const folders = store.folders.filter(v => !delIds.has(v.id));
     const state = store.state.filter(v => !delIds.has(v.folderId));
+    const templates = store.templates.filter(v => !delIds.has(v.parentId));
+    const delTemplates = store.templates.filter(v => delIds.has(v.parentId));
+    for(const temp of delTemplates){
+      await this.removeTemplate(storeId, temp.id, false);
+    }
     store.folders = folders;
     store.state = state;
+    store.templates = templates;
     await this.saveFile([storeId]);
     return utils.generateMsg(true, constant.SUCCESSFULLY_REMOVED_FOLDER);
   }
 
 
+  async saveTemplate (storeId: string, path: vscode.Uri, name: string, parentId: string, type: 'file' | 'folder', description: string): Promise<Msg> {
+    const msg = await this.validate();
+    if(!msg.status){
+      return msg;
+    }
+    const store = this.stores.find(v => v.id === storeId);
+    if(!store){
+      return utils.generateMsg(false, constant.NOT_FOUND_STORE);
+    }
+    const id = utils.getId();
+    const template:Template = {
+      id,
+      parentId,
+      type,
+      description,
+      name,
+      storeId
+    };
+    const res = await utils.copyToTarget(path, vscode.Uri.joinPath(this.config!.savePathUri, storeId, id));
+    if(!res.status){
+      return res;
+    }
+    store.templates.push(template);
+    await this.saveFile([storeId]);
+    return utils.generateMsg(true, constant.SUCCESSFULLY_ADD_FOLDER);
+  }
+
+  async removeTemplate (storeId: string, id: string, needSave?: boolean):Promise<Msg> {
+    const msg = await this.validate();
+    if(!msg.status){
+      return msg;
+    }
+    const store = this.stores.find(v => v.id === storeId);
+    if(!store){
+      return utils.generateMsg(false, constant.NOT_FOUND_STORE);
+    }
+    const idx = store.templates.findIndex(v => v.id === id);
+    if(idx<0){
+      return utils.generateMsg(false, constant.NOT_FOUND_TEMPLATE);
+    }
+    const filePath = vscode.Uri.joinPath(this.config!.savePathUri, storeId, id);
+    await vscode.workspace.fs.delete(filePath, { recursive: true, useTrash: true });
+    store.templates.splice(idx, 1);
+    needSave && await this.saveFile([storeId]);
+    return utils.generateMsg(true, constant.SUCCESSFULLY_REMOVED_TEMPLATE);
+  }
+
+  async insertTemplate (storeId: string, id: string, target: vscode.Uri):Promise<Msg> {
+    const msg = await this.validate();
+    if(!msg.status){
+      return msg;
+    }
+    const store = this.stores.find(v => v.id === storeId);
+    if(!store){
+      return utils.generateMsg(false, constant.NOT_FOUND_STORE);
+    }
+    const source = vscode.Uri.joinPath(this.config!.savePathUri, storeId, id);
+    await utils.copyToTarget(source, target);
+    return utils.generateMsg(true, constant.SUCCESSFULLY_COPY);
+  }
 }
 
 // export class Store{

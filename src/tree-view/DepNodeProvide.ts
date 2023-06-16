@@ -34,6 +34,10 @@ export class DepNodeProvide implements vscode.TreeDataProvider<vscode.TreeItem>{
         items.forEach(v => {
           treeItemNodes.push(new TreeItemNode(`📝${v.title}`, v.id, v.folderId, storeId, 'item', v.snippet, v.language, 0));
         });
+        const templates = store.templates.filter(v => v.parentId === id);
+        templates.forEach(v => {
+          treeItemNodes.push(new TreeItemNode(`🎬${v.name}`, v.id, v.parentId, storeId, 'template', null, null, 0));
+        });
         return treeItemNodes;
       } else if (type === 'store') {
         const store = this.stores.find(v => v.id === storeId);
@@ -48,6 +52,11 @@ export class DepNodeProvide implements vscode.TreeDataProvider<vscode.TreeItem>{
         const items = store.state.filter(v => v.folderId === id);
         items.forEach(v => {
           treeItemNodes.push(new TreeItemNode(`📝${v.title}`, v.id, v.folderId, storeId, 'item', v.snippet, v.language, 0));
+        });
+
+        const templates = store.templates.filter(v => v.parentId === id);
+        templates.forEach(v => {
+          treeItemNodes.push(new TreeItemNode(`🎬${v.name}`, v.id, v.parentId, storeId, 'template', null, null, 0));
         });
         return treeItemNodes;
 

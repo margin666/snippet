@@ -6,8 +6,6 @@ import * as constant from '../constant';
 
 
 
-
-
 // const myValidateDecorator = (...params: any[]) => {
 //   return (...ctx: any[]) => {
 //     const [,,descriptor] = ctx;
@@ -25,16 +23,11 @@ import * as constant from '../constant';
 //   };
 // }
 
-interface ConfigUri extends Omit<Config, 'savePath'>{
-  savePathUri: vscode.Uri;
-}
 
 export class LocalConfig{
   private static instance: LocalConfig;
-  private config: ConfigUri | undefined;
   private stores: Store[];
   private constructor(){
-    this.config = undefined;
     this.stores = [];
   }
   static getInstance():LocalConfig{
@@ -48,54 +41,35 @@ export class LocalConfig{
     return this.stores;
   }
   
-  validate2():Msg{
-    if (!this.config) {
+  validateConfig(config: Config | null):config is Config {
+    if(config === null){
       vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
-      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
+      return false;
     }
-    if (!this.config.stores) {
+    if (!config) {
       vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
-      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG_STORE_MAP);
-    }
-    if (!this.config.savePathUri) {
-      vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
-      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG_SAVE_PATH);
-    }
-    vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', false);
-    return utils.generateMsg(true, constant.VERIFICATION_PASSED);
-  }
-
-  
-  async validate():Promise<Msg>{
-    const config = await vscode.workspace.getConfiguration().get('snippet.config') as Record<string, string>;
-    if (Object.keys(config).length === 0) {
-      vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
-      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
+      return false;
     }
     if (!config.stores) {
       vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
-      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG_STORE_MAP);
+      return false;
     }
     if (!config.savePath) {
       vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', true);
-      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG_SAVE_PATH);
+      return false;
     }
     vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', false);
-    return utils.generateMsg(true, constant.VERIFICATION_PASSED);
+    return true;
   }
 
   async load():Promise<Msg>{
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
-    const config = await vscode.workspace.getConfiguration().get('snippet.config') as Config;
     vscode.commands.executeCommand('setContext', 'snippet.setSaveDirectory', false);
     vscode.commands.executeCommand('setContext', 'snippet.load', true);
-    this.config = {
-      stores: config.stores,
-      savePathUri: vscode.Uri.file(config.savePath)
-    };
     const savePath = vscode.Uri.file(config.savePath);
     for(const v of config.stores){
       const filePath = vscode.Uri.joinPath(savePath, v, `${v}.json`);
@@ -116,39 +90,41 @@ export class LocalConfig{
       savePath: path.fsPath,
       stores: []
     };
-    const configUri: ConfigUri = {
-      savePathUri: vscode.Uri.file(path.fsPath),
-      stores: []
-    };
-    this.config = configUri;
     await vscode.workspace.getConfiguration().update('snippet.config', config, true);
     return utils.generateMsg(true, constant.SUCCESSFULLY_CREATED_SAVE_DIRECTORY);
   }
 
   async changeSaveDirectory (path: vscode.Uri): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const beforeConfig = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(beforeConfig);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
-    await utils.copyToTarget(this.config!.savePathUri, path);
-    this.config!.savePathUri = path;
-    const config:Config = {
-      savePath: this.config!.savePathUri.fsPath,
-      stores: this.config!.stores
+    const beforeConfigUri = vscode.Uri.file(beforeConfig.savePath);
+    await utils.copyToTarget(beforeConfigUri, path);
+    const afterConfig:Config = {
+      savePath: path.fsPath,
+      stores: beforeConfig.stores
     };
-    await vscode.workspace.getConfiguration().update('snippet.config', config, true);
+    await vscode.workspace.getConfiguration().update('snippet.config', afterConfig, true);
     return utils.generateMsg(true, constant.SUCCESSFULLY_CHANGED_SAVE_DIRECTORY);
   }
 
 
   private async saveFile (ids?: string[]): Promise<boolean> {
-    ids = ids ? ids : this.config!.stores;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return false;
+    }
+    ids = ids ? ids : config.stores;
+    const configUri = vscode.Uri.file(config.savePath);
     for(const v of ids){
       const store = this.stores.find(el => el.id === v);
       if(store){
         const temp = JSON.stringify(store);
         const storeBuffer = Buffer.from(temp);
-        const pathUri = vscode.Uri.joinPath(this.config!.savePathUri, v, `${v}.json`);
+        const pathUri = vscode.Uri.joinPath(configUri, v, `${v}.json`);
         await vscode.workspace.fs.writeFile(pathUri, storeBuffer);
       }
     }
@@ -156,13 +132,15 @@ export class LocalConfig{
   }
 
   private async updateConfig (): Promise<Msg>{
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const beforeConfig = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(beforeConfig);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
+    const stores = this.stores.map(v => v.id);
     const config:Config = {
-      savePath: this.config!.savePathUri.fsPath,
-      stores: this.config!.stores
+      savePath: beforeConfig.savePath,
+      stores
     };
     await vscode.workspace.getConfiguration().update('snippet.config', config, true);
     return utils.generateMsg(true, constant.VERIFICATION_UPDATED_CONFIG);
@@ -173,9 +151,10 @@ export class LocalConfig{
   }
 
   async removeItem (storeId: string, itemId: string, needSave?: boolean): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
@@ -191,9 +170,10 @@ export class LocalConfig{
   }
 
   async addItem (storeId: string, title: string, folderId: string, language: Language): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const id = utils.getId();
     const activeTextEditor = vscode.window.activeTextEditor;
@@ -223,9 +203,10 @@ export class LocalConfig{
  
 
   async insertSnippet (storeId: string, id: string): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
@@ -243,9 +224,10 @@ export class LocalConfig{
 
 
   async importStore (source: vscode.Uri): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const stat = await vscode.workspace.fs.stat(source);
     if(stat.type !== 2){
@@ -254,26 +236,27 @@ export class LocalConfig{
 
     const sourceParent = vscode.Uri.joinPath(source, '../');
     const [[name]] = await vscode.workspace.fs.readDirectory(sourceParent);
-    if(this.config!.stores.includes(name)){
+    if(config.stores.includes(name)){
       return utils.generateMsg(false, '存在同名仓库！');
     }
-    const target = vscode.Uri.joinPath(this.config!.savePathUri, name);
+    const configUri = vscode.Uri.file(config.savePath);
+    const target = vscode.Uri.joinPath(configUri, name);
     await utils.copyToTarget(source, target);
 
     const filePath = vscode.Uri.joinPath(target, `${name}.json`);
     const document = await vscode.workspace.openTextDocument(filePath);
     const store = await JSON.parse(document.getText()) as Store;
     this.stores.push(store);
-    this.config!.stores.push(store.id);
     await this.updateConfig();
     await this.saveFile([store.id]);
     return utils.generateMsg(true, constant.SUCCESSFULLY_IMPORT);
   }
 
   async exportStore (path: vscode.Uri, id: string): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     
     const newDirectory = vscode.Uri.joinPath(path, `export-${Date.now()}`, id);
@@ -282,21 +265,23 @@ export class LocalConfig{
     if(!store){
       return utils.generateMsg(false, constant.NOT_FOUND_STORE);
     }
-    const _path = vscode.Uri.joinPath(this.config!.savePathUri, id);
+    const configUri = vscode.Uri.file(config.savePath);
+    const _path = vscode.Uri.joinPath(configUri, id);
     await utils.copyToTarget(_path, newDirectory);
     return utils.generateMsg(true, constant.SUCCESSFULLY_EXPORT);
   }
 
   async removeStore(id: string): Promise<Msg>{
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
+    const configUri = vscode.Uri.file(config.savePath);
     const idx = this.stores.findIndex(v => v.id === id);
     if(idx > -1){
       this.stores.splice(idx, 1);
-      this.config!.stores = this.config!.stores.filter(v => v !== id);
-      const storePath = vscode.Uri.joinPath(this.config!.savePathUri, id);
+      const storePath = vscode.Uri.joinPath(configUri, id);
       await this.updateConfig();
       await vscode.workspace.fs.delete(storePath, { recursive: true, useTrash: true });
     }
@@ -304,12 +289,12 @@ export class LocalConfig{
   }
 
   async createStore (name: string): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const id = utils.getId();
-    this.config!.stores.push(id);
     this.stores.push({
       id,
       name,
@@ -324,9 +309,10 @@ export class LocalConfig{
 
 
   async addFolder (storeId: string, label: string, parentId: string, canRemove: boolean = true, virtually: boolean = false): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
@@ -340,9 +326,10 @@ export class LocalConfig{
   }
 
   async removeFolder (storeId: string, id: string): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
@@ -381,10 +368,12 @@ export class LocalConfig{
 
 
   async saveTemplate (storeId: string, path: vscode.Uri, name: string, parentId: string, type: 'file' | 'folder', description: string): Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
+    const configUri = vscode.Uri.file(config.savePath);
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
       return utils.generateMsg(false, constant.NOT_FOUND_STORE);
@@ -398,7 +387,7 @@ export class LocalConfig{
       name,
       storeId
     };
-    const res = await utils.copyToTarget(path, vscode.Uri.joinPath(this.config!.savePathUri, storeId, id));
+    const res = await utils.copyToTarget(path, vscode.Uri.joinPath(configUri, storeId, id));
     if(!res.status){
       return res;
     }
@@ -408,10 +397,12 @@ export class LocalConfig{
   }
 
   async removeTemplate (storeId: string, id: string, needSave?: boolean):Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
+    const configUri = vscode.Uri.file(config.savePath);
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
       return utils.generateMsg(false, constant.NOT_FOUND_STORE);
@@ -420,7 +411,7 @@ export class LocalConfig{
     if(idx<0){
       return utils.generateMsg(false, constant.NOT_FOUND_TEMPLATE);
     }
-    const filePath = vscode.Uri.joinPath(this.config!.savePathUri, storeId, id);
+    const filePath = vscode.Uri.joinPath(configUri, storeId, id);
     await vscode.workspace.fs.delete(filePath, { recursive: true, useTrash: true });
     store.templates.splice(idx, 1);
     needSave && await this.saveFile([storeId]);
@@ -428,15 +419,17 @@ export class LocalConfig{
   }
 
   async insertTemplate (storeId: string, id: string, target: vscode.Uri):Promise<Msg> {
-    const msg = await this.validate();
-    if(!msg.status){
-      return msg;
+    const config = vscode.workspace.getConfiguration().get('snippet.config') as Config | null;
+    const msg = this.validateConfig(config);
+    if(!msg){
+      return utils.generateMsg(false, constant.NOT_FOUND_CONFIG);
     }
+    const configUri = vscode.Uri.file(config.savePath);
     const store = this.stores.find(v => v.id === storeId);
     if(!store){
       return utils.generateMsg(false, constant.NOT_FOUND_STORE);
     }
-    const source = vscode.Uri.joinPath(this.config!.savePathUri, storeId, id);
+    const source = vscode.Uri.joinPath(configUri, storeId, id);
     await utils.copyToTarget(source, target);
     return utils.generateMsg(true, constant.SUCCESSFULLY_COPY);
   }

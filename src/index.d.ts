@@ -24,7 +24,7 @@ interface Folder{
 interface Template{
   id: string;
   name: string;
-  description?: string;
+  description: string;
   parentId: string;
   storeId: string;
   type: 'file' | 'folder';

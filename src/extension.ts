@@ -66,13 +66,21 @@ export async function activate(context: vscode.ExtensionContext) {
 		});
 	vscode.commands.registerCommand('snippet.createStore', async () => {
 		const name = await vscode.window.showInputBox({
-			placeHolder: '请输入仓库名称',
-			ignoreFocusOut: true
+			title: '请输入名称',
+			placeHolder: '必填',
+			ignoreFocusOut: true,
+			validateInput: val => {
+				const result = val.trim();
+				if(result === ''){
+					return '名称不能为空!';
+				}
+				return null;
+			}
 		});
 		if(!name){
 			return;
 		}
-		const res = await storeInstance.createStore(name);
+		const res = await storeInstance.createStore(name.trim());
 		if(res.status){
 			treeView?.refrech();
 		}
@@ -80,13 +88,21 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	vscode.commands.registerCommand('snippet.createFolder', async (data:TreeItemNode) => {
 		const name = await vscode.window.showInputBox({
-			placeHolder: '请输入文件夹名称',
-			ignoreFocusOut: true
+			title: '请输入名称',
+			placeHolder: '必填',
+			ignoreFocusOut: true,
+			validateInput: val => {
+				const result = val.trim();
+				if(result === ''){
+					return '名称不能为空!';
+				}
+				return null;
+			}
 		});
 		if(!name){
 			return;
 		}
-		const res = await storeInstance.addFolder(data.storeId, name, data.id);
+		const res = await storeInstance.addFolder(data.storeId, name.trim(), data.id);
 		res.status && treeView?.refrech();
 	});
 	vscode.commands.registerCommand('snippet.removeFolder', async (data: TreeItemNode) => {
@@ -203,18 +219,30 @@ export async function activate(context: vscode.ExtensionContext) {
 			return;
 		}
 		const name = await vscode.window.showInputBox({
-			placeHolder: '起个名字吧',
-			ignoreFocusOut: true
+			title: '请输入名称',
+			placeHolder: '必填',
+			ignoreFocusOut: true,
+			validateInput: val => {
+				const result = val.trim();
+				if(result === ''){
+					return '名称不能为空!';
+				}
+				return null;
+			}
 		});
 		if(!name){
 			return;
 		}
 		const folderId = result.description;
-		const res = await storeInstance.addItem(storeId, name, folderId, language);
+		const res = await storeInstance.addItem(storeId, name.trim(), folderId, language);
 		res.status && treeView?.refrech();
 	});
 	vscode.commands.registerCommand('snippet.removeItem', async (data: TreeItemNode) => {
-		const res = await storeInstance.removeItem(data.storeId, data.id);
+		const result = await vscode.window.showWarningMessage<string>(`确认删除【${data.label}】？`, '确认');
+		if(!result){
+			return;
+		}
+		const res = await storeInstance.removeItem(data.storeId, data.id, true);
 		res.status && treeView?.refrech();
 	});
 
@@ -356,18 +384,35 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 
 		const name = await vscode.window.showInputBox({
-			placeHolder: '起个名字吧',
-			ignoreFocusOut: true
+			title: '请输入名称',
+			placeHolder: '必填',
+			ignoreFocusOut: true,
+			validateInput: val => {
+				const result = val.trim();
+				if(result === ''){
+					return '名称不能为空!';
+				}
+				return null;
+			}
 		});
 		if(!name){
 			return;
 		}
+		const desc = await vscode.window.showInputBox({
+			title: '请输入描述',
+			placeHolder: '非必填',
+			ignoreFocusOut: true
+		});
 		const folderId = result.description;
-		const res = await storeInstance.saveTemplate(storeId, data, name, folderId, type, 'desc');
+		const res = await storeInstance.saveTemplate(storeId, data, name.trim(), folderId, type, desc?desc:'');
 		res.status && treeView?.refrech();
 
 	});
 	vscode.commands.registerCommand('snippet.removeTemplate', async (data: TreeItemNode) => {
+		const result = await vscode.window.showWarningMessage<string>(`确认删除模板【${data.label}】？`, '确认');
+		if(!result){
+			return;
+		}
 		const res = await storeInstance.removeTemplate(data.storeId, data.id, true);
 		res.status && treeView?.refrech();
 	});

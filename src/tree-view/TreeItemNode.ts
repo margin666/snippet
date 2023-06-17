@@ -32,6 +32,13 @@ export class TreeItemNode extends vscode.TreeItem {
 			md.appendCodeblock(this.snippet, this.language);
 			this.tooltip = md; 
 		}
+
+		if(typeof this.snippet === 'string' && this.type === 'template'){
+			const md = new vscode.MarkdownString();
+			md.supportHtml = true;
+			md.appendText(this.snippet);
+			this.tooltip = md; 
+		}
 	}
 
 	private icon():vscode.ThemeIcon | undefined{

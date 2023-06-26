@@ -36,7 +36,7 @@ export class DepNodeProvide implements vscode.TreeDataProvider<vscode.TreeItem>{
         });
         const templates = store.templates.filter(v => v.parentId === id);
         templates.forEach(v => {
-          treeItemNodes.push(new TreeItemNode(`🎬${v.name}`, v.id, v.parentId, storeId, 'template', null, null, 0));
+          treeItemNodes.push(new TreeItemNode(`🎬${v.name}`, v.id, v.parentId, storeId, 'template', v.description, null, 0));
         });
         return treeItemNodes;
       } else if (type === 'store') {

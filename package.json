@@ -2,7 +2,7 @@
   "name": "snippet-store",
   "displayName": "snippet-store",
   "description": "存放常用的代码片段",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "publisher": "margin",
   "engines": {
     "vscode": "^1.78.0"
@@ -191,11 +191,6 @@
         {
           "command": "snippet.createStore",
           "group": "navigation@1",
-          "when": "view == treeView"
-        },
-        {
-          "command": "snippet.changeSaveDirectory",
-          "group": "navigation@2",
           "when": "view == treeView"
         }
       ],

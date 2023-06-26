@@ -21,7 +21,7 @@ export class TreeItemNode extends vscode.TreeItem {
 		this.type = type;
 		this.parentId = parentId;
 		this.storeId = storeId;
-		this.iconPath = undefined;
+		this.iconPath = void 0;
 		this.language = language;
 		this.snippet = snippet;
 		// 提供给when使用

@@ -5,7 +5,7 @@
   "version": "0.2.3",
   "publisher": "margin",
   "engines": {
-    "vscode": "^1.70.0"
+    "vscode": "^1.78.0"
   },
   "repository": {
     "type": "git",

@@ -1,8 +1,8 @@
 {
   "name": "snippet-store",
   "displayName": "snippet-store",
-  "description": "存放常用的代码片段",
-  "version": "0.2.3",
+  "description": "可以快速插入自定义代码片段和模板",
+  "version": "0.2.4",
   "publisher": "margin",
   "engines": {
     "vscode": "^1.78.0"
@@ -198,7 +198,7 @@
         {
           "command": "snippet.createFolder",
           "group": "navigation@1",
-          "when": "view == treeView && viewItem !== item"
+          "when": "view == treeView && viewItem !== item && viewItem !== template"
         },
         {
           "command": "snippet.removeStore",
